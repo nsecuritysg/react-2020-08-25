@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
+import { useSelector, useDispatch } from 'react-redux';
 import Restaurant from '../restaurant';
 import Tabs from '../tabs';
 import Loader from '../loader';
@@ -11,9 +10,26 @@ import {
 } from '../../redux/selectors';
 import { loadRestaurants } from '../../redux/actions';
 
-const Restaurants = ({ restaurants, loadRestaurants, loading, loaded }) => {
+const useMyHookCounter = () => {
+  const [count, setCount] = React.useState(0);
+  const increase = React.useCallback(() => {
+    setCount(count + 1);
+  }, [setCount, count]);
+  const decrease = React.useCallback(() => {
+    setCount(count - 1);
+  }, [setCount, count]);
+  return [count, increase, decrease];
+};
+
+export const Restaurants = () => {
+  const restaurants = useSelector(restaurantsListSelector);
+  const loading = useSelector(restaurantsLoadingSelector);
+  const loaded = useSelector(restaurantsLoadedSelector);
+  const dispatch = useDispatch();
+  const [count, increaseCount, decreaseCount] = useMyHookCounter();
+
   useEffect(() => {
-    if (!loading && !loaded) loadRestaurants();
+    if (!loading && !loaded) dispatch(loadRestaurants());
   }, []); // eslint-disable-line
 
   if (loading || !loaded) return <Loader />;
@@ -23,22 +39,14 @@ const Restaurants = ({ restaurants, loadRestaurants, loading, loaded }) => {
     content: <Restaurant {...restaurant} />,
   }));
 
-  return <Tabs tabs={tabs} />;
+  return (
+    <>
+      <div onClick={increaseCount} onContextMenu={decreaseCount}>
+        {count}
+      </div>
+      <Tabs tabs={tabs} />
+    </>
+  );
 };
 
-Restaurants.propTypes = {
-  restaurants: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-    }).isRequired
-  ).isRequired,
-};
-
-export default connect(
-  (state) => ({
-    restaurants: restaurantsListSelector(state),
-    loading: restaurantsLoadingSelector(state),
-    loaded: restaurantsLoadedSelector(state),
-  }),
-  { loadRestaurants }
-)(Restaurants);
+export default Restaurants;
